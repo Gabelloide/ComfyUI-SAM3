@@ -37,7 +37,7 @@ class PositionEmbeddingSine(nn.Module):
         # and avoid symbolic shape tracing errors in torch.compile in PyTorch 2.4 nightly.
         if precompute_resolution is not None:
             # We precompute pos enc for stride 4, 8, 16 and 32 to fill `self.cache`.
-            precompute_sizes = [
+            precompute_sizes =[
                 (precompute_resolution // 4, precompute_resolution // 4),
                 (precompute_resolution // 8, precompute_resolution // 8),
                 (precompute_resolution // 16, precompute_resolution // 16),
@@ -92,7 +92,11 @@ class PositionEmbeddingSine(nn.Module):
         cache_key = None
         cache_key = (x.shape[-2], x.shape[-1])
         if cache_key in self.cache:
-            return self.cache[cache_key][None].repeat(x.shape[0], 1, 1, 1)
+            pos = self.cache[cache_key]
+            if pos.device != x.device:
+                pos = pos.to(x.device)
+                self.cache[cache_key] = pos
+            return pos[None].repeat(x.shape[0], 1, 1, 1)
         y_embed = (
             torch.arange(1, x.shape[-2] + 1, dtype=torch.float32, device=x.device)
             .view(1, -1, 1)

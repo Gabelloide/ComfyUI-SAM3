@@ -124,11 +124,9 @@ class TransformerDecoderLayer(nn.Module):
 
             if presence_token is not None:
                 tgt_o2o = torch.cat([presence_token, tgt_o2o], dim=0)
-                tgt_query_pos_o2o = torch.cat(
-                    [torch.zeros_like(presence_token), tgt_query_pos_o2o], dim=0
+                tgt_query_pos_o2o = torch.cat([torch.zeros_like(presence_token), tgt_query_pos_o2o], dim=0
                 )
-                tgt_query_pos = torch.cat(
-                    [torch.zeros_like(presence_token), tgt_query_pos], dim=0
+                tgt_query_pos = torch.cat([torch.zeros_like(presence_token), tgt_query_pos], dim=0
                 )
 
             q = k = self.with_pos_embed(tgt_o2o, tgt_query_pos_o2o)
@@ -344,6 +342,10 @@ class TransformerDecoder(nn.Module):
         ):
             # good, hitting the cache, will be compilable
             coords_h, coords_w = self.compilable_cord_cache
+            if coords_h.device != reference_boxes.device:
+                coords_h = coords_h.to(reference_boxes.device)
+                coords_w = coords_w.to(reference_boxes.device)
+                self.compilable_cord_cache = (coords_h, coords_w)
         else:
             # cache miss, will create compilation issue
             # In case we're not compiling, we'll still rely on the dict-based cache
@@ -352,6 +354,10 @@ class TransformerDecoder(nn.Module):
                     H, W, reference_boxes.device
                 )
             coords_h, coords_w = self.coord_cache[feat_size]
+            if coords_h.device != reference_boxes.device:
+                coords_h = coords_h.to(reference_boxes.device)
+                coords_w = coords_w.to(reference_boxes.device)
+                self.coord_cache[feat_size] = (coords_h, coords_w)
 
             assert coords_h.shape == (H,)
             assert coords_w.shape == (W,)
@@ -361,7 +367,7 @@ class TransformerDecoder(nn.Module):
         deltas_x = coords_w.view(1, -1, 1) - boxes_xyxy.reshape(-1, 1, 4)[:, :, 0:3:2]
         deltas_x = deltas_x.view(bs, num_queries, -1, 2)
 
-        if self.boxRPB in ["log", "both"]:
+        if self.boxRPB in["log", "both"]:
             deltas_x_log = deltas_x * 8  # normalize to -8, 8
             deltas_x_log = (
                 torch.sign(deltas_x_log)
@@ -470,7 +476,7 @@ class TransformerDecoder(nn.Module):
 
         bs = tgt.shape[1]
         intermediate = []
-        intermediate_presence_logits = []
+        intermediate_presence_logits =[]
         presence_feats = None
 
         if self.box_refine:

@@ -153,6 +153,7 @@ class LoadSAM3Model:
                     "default": "models/sam3/sam3.pt",
                     "tooltip": "Path to SAM3 model checkpoint (relative to ComfyUI root or absolute). Auto-downloads if not found."
                 }),
+                "device": (["auto", "cuda:0", "cuda:1", "cuda:2", "cuda:3", "cuda:4", "cuda:5", "cuda:6", "cuda:7", "cpu"], {"default": "auto"}),
             },
         }
 
@@ -161,7 +162,7 @@ class LoadSAM3Model:
     FUNCTION = "load_model"
     CATEGORY = "SAM3"
 
-    def load_model(self, model_path):
+    def load_model(self, model_path, device="auto"):
         """
         Load SAM3 unified model with ComfyUI integration.
 
@@ -171,6 +172,7 @@ class LoadSAM3Model:
 
         Args:
             model_path: Path to model checkpoint (relative or absolute)
+            device: specific device selector
 
         Returns:
             Tuple containing SAM3UnifiedModel for ComfyUI memory management
@@ -189,7 +191,11 @@ class LoadSAM3Model:
             )
 
         # Get devices from ComfyUI's model management
-        load_device = comfy.model_management.get_torch_device()
+        if device == "auto":
+            load_device = comfy.model_management.get_torch_device()
+        else:
+            load_device = torch.device(device)
+            
         offload_device = comfy.model_management.unet_offload_device()
 
         print(f"[SAM3] Load device: {load_device}, Offload device: {offload_device}")
@@ -221,6 +227,7 @@ class LoadSAM3Model:
                 checkpoint_path=checkpoint_path_str,
                 bpe_path=bpe_path_str,
                 enable_inst_interactivity=enable_inst_interactivity,
+                device=load_device,
             )
         except FileNotFoundError as e:
             raise FileNotFoundError(

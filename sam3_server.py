@@ -16,6 +16,7 @@ from PIL import Image
 from aiohttp import web
 from server import PromptServer
 import folder_paths
+import comfy.model_management
 
 # Global state for SAM3 predictor
 sam3_predictor = None
@@ -116,7 +117,7 @@ async def sam3_detect(request):
 
     try:
         data = await request.json()
-        positive_points = data.get("positive_points", [])
+        positive_points = data.get("positive_points",[])
         negative_points = data.get("negative_points", [])
         threshold = data.get("threshold", 0.7)
 
@@ -141,12 +142,13 @@ async def sam3_detect(request):
             import folder_paths
             ckpt_path = os.path.join(folder_paths.models_dir, "sam3", "sam3.pt")
             
+            device = comfy.model_management.get_torch_device()
+            
             if os.path.exists(ckpt_path):
                 print(f"[SAM3 Server] Found local model at {ckpt_path}")
-                model = build_sam3_image_model(checkpoint_path=ckpt_path, load_from_HF=False)
+                model = build_sam3_image_model(checkpoint_path=ckpt_path, load_from_HF=False, device=device)
             else:
-                model = build_sam3_image_model()
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                model = build_sam3_image_model(device=device)
             model = model.to(device).eval()
 
             processor = Sam3Processor(model, device=device)
@@ -164,8 +166,8 @@ async def sam3_detect(request):
         state = processor.set_image(image)
 
         # Prepare points and labels
-        all_points = []
-        all_labels = []
+        all_points =[]
+        all_labels =[]
 
         # Add positive points (label=1)
         for point in positive_points:

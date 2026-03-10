@@ -43,13 +43,16 @@ class Sam3VideoPredictor:
         video_loader_type="cv2",
         apply_temporal_disambiguation: bool = True,
         enable_inst_interactivity=False,
+        device=None,
     ):
         self.async_loading_frames = async_loading_frames
         self.video_loader_type = video_loader_type
         from .model_builder import build_sam3_video_model
 
         # Determine device
-        if torch.cuda.is_available():
+        if device is not None:
+            self.device = torch.device(device)
+        elif torch.cuda.is_available():
             self.device = torch.device("cuda")
         else:
             self.device = torch.device("cpu")
@@ -65,6 +68,7 @@ class Sam3VideoPredictor:
                 strict_state_dict_loading=strict_state_dict_loading,
                 apply_temporal_disambiguation=apply_temporal_disambiguation,
                 enable_inst_interactivity=enable_inst_interactivity,
+                device=self.device,
             )
             .to(self.device)
             .eval()
@@ -231,7 +235,7 @@ class Sam3VideoPredictor:
                 ):
                     yield {"frame_index": frame_idx, "outputs": outputs}
             # Then doing the backward propagation (reverse in time)
-            if propagation_direction in ["both", "backward"]:
+            if propagation_direction in["both", "backward"]:
                 for frame_idx, outputs in self.model.propagate_in_video(
                     inference_state=inference_state,
                     start_frame_idx=start_frame_idx,
@@ -301,7 +305,7 @@ class Sam3VideoPredictor:
             )
         else:
             mem_stats = "Running on CPU"
-        session_stats_str = f"live sessions: [{', '.join(live_session_strs)}], {mem_stats}"
+        session_stats_str = f"live sessions:[{', '.join(live_session_strs)}], {mem_stats}"
         return session_stats_str
 
     def _get_torch_and_gpu_properties(self):

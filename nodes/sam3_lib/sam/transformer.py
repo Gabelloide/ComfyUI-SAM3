@@ -273,7 +273,7 @@ class RoPEAttention(Attention):
         # whether to repeat q rope to match k length
         # this is needed for cross-attention to memories
         rope_k_repeat=False,
-        feat_sizes=(64, 64),  # [w, h] for stride 16 feats at 1024 resolution
+        feat_sizes=(64, 64),  #[w, h] for stride 16 feats at 1024 resolution
         use_rope_real=False,
         **kwargs,
     ):
@@ -306,10 +306,11 @@ class RoPEAttention(Attention):
 
         # Apply rotary position encoding
         w = h = math.sqrt(q.shape[-2])
-        if self.freqs_cis.shape[0] != q.shape[-2]:
+        if self.freqs_cis.shape[0] != q.shape[-2] or self.freqs_cis.device != q.device:
             self.freqs_cis = self.compute_cis(end_x=w, end_y=h, device=q.device)
-            self.freqs_cis_real = self.freqs_cis.real
-            self.freqs_cis_imag = self.freqs_cis.imag
+            if self.use_rope_real:
+                self.freqs_cis_real = self.freqs_cis.real
+                self.freqs_cis_imag = self.freqs_cis.imag
         if q.shape[-2] != k.shape[-2]:
             assert self.rope_k_repeat
 
