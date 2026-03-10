@@ -147,13 +147,21 @@ class LoadSAM3Model:
 
     @classmethod
     def INPUT_TYPES(cls):
+        # Dynamically build the list of available devices
+        device_list = ["auto"]
+        if torch.cuda.is_available():
+            device_list.extend([f"cuda:{i}" for i in range(torch.cuda.device_count())])
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            device_list.append("mps")
+        device_list.append("cpu")
+        
         return {
             "required": {
                 "model_path": ("STRING", {
                     "default": "models/sam3/sam3.pt",
                     "tooltip": "Path to SAM3 model checkpoint (relative to ComfyUI root or absolute). Auto-downloads if not found."
                 }),
-                "device": (["auto", "cuda:0", "cuda:1", "cuda:2", "cuda:3", "cuda:4", "cuda:5", "cuda:6", "cuda:7", "cpu"], {"default": "auto"}),
+                "device": (device_list, {"default": "auto"}),
             },
         }
 
